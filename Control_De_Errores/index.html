@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Errores</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  
+  <form>
+    <h2>Edición</h2>
+
+    <label for="asunto">Asunto (1)</label>
+    <input type="text" id="asunto" name="asunto" placeholder="máx. 10 caracteres" maxlength="10" required>
+    <p>Entre 1 y 10 caracteres. Sin duplicados.</p>
+
+    <label for="fecha">Fecha (2)</label>
+    <input type="date" id="fecha" name="fecha" min="2000-01-01" required>
+    <p>No anterior al 01/01/2000. Fecha válida.</p>
+
+    <label for="cantidad">Cantidad (3)</label>
+    <input type="number" id="cantidad" name="cantidad" min="0" step="0.01" placeholder="0.00" required>
+    <p>Número decimal ≥ 0.</p>
+
+    <label for="tipo">Tipo (4)</label>
+    <select id="tipo" name="tipo" required>
+      <option value="empresa">Empresas</option>
+      <option value="particular">Particulares</option>
+    </select>
+
+    <div class="botones">
+      <button type="submit" class="primary" name="añadir" id="añadir">Añadir/Actualizar (7)</button>
+    </div>
+  </form>
+
+  <div class="facturas">
+    <h2>Facturas</h2>
+    <label for="lista">Lista de facturas (5)</label>
+    <textarea id="lista" readonly></textarea>
+
+    <div class="botones">
+      <button id="editar" name="editar">Editar (8)</button>
+      <button id="eliminar" name="eliminar">Eliminar (9)</button>
+    </div>
+
+    <div class="mensaje">0 factura(s)</div>
+  </div>
+
+
+<script>
+  
+  // === Variables globales === 
+  const patronAsunto = /^[^\s].{0,9}$/; // 1-10 caracteres, no empieza con espacio
+  let facturas = []; // Array para almacenar las facturas
+  let indiceEditar = -1; // Índice de la factura que se está editando
+  let contadorErrores = 0; // Número total de intentos fallidos (guardado en cookie)
+
+  // === Detectar botones ===
+  document.getElementById("añadir").addEventListener("click", añadirFactura);
+  document.getElementById("editar").addEventListener("click", editarFactura);
+  document.getElementById("eliminar").addEventListener("click", eliminarFactura);
+
+  // === Cargar cookies al iniciar ===
+  // Esta parte recupera las preferencias guardadas (tipo y contador de errores)
+  // y las aplica automáticamente al cargar la página.
+  window.addEventListener("load", () => {
+    const tipoGuardado = leerCookie("tipoPreferido");
+    if (tipoGuardado) {
+
+      // Si existe una cookie con el tipo preferido, se selecciona automáticamente.
+      document.getElementById("tipo").value = tipoGuardado;
+    }
+
+    const erroresGuardados = leerCookie("contadorErrores");
+    if (erroresGuardados) {
+      // Si hay una cookie de contador de errores, la cargamos.
+      contadorErrores = parseInt(erroresGuardados);
+    }
+
+    mostrarFacturas(); // Actualiza la interfaz
+  });
+
+  //---------------------------------------------------------------------------------------------------------------------//
+
+  // === Funciones de cookies ===
+  
+  function crearCookie(nombre, valor, dias = 7) {
+    const fecha = new Date();
+    fecha.setTime(fecha.getTime() + dias * 24 * 60 * 60 * 1000); //fecha de expiracion de la cookie, caduca en 7 dias
+    document.cookie = `${nombre}=${valor};expires=${fecha.toUTCString()};path=/`; //creamos o actualizamos la cookie en el navegador
+  }
+
+  // Lee una cookie concreta por su nombre y devuelve su valor.
+  function leerCookie(nombre) {
+    const nameCookie = nombre + "="; // Base de búsqueda
+    const partes = document.cookie.split(";"); // Separa todas las cookies existentes
+    for (let cookie of partes) {
+      cookie = cookie.trim(); // Limpia espacios
+      // Si la cookie actual empieza por el nombre buscado, devolvemos su valor
+      if (cookie.indexOf(nameCookie) === 0)
+        return cookie.substring(nameCookie.length, cookie.length);
+    }
+    // Si no existe, devuelve null
+    return null;
+  }
+
+  //---------------------------------------------------------------------------------------------------------------------//
+
+  // === Registrar error y actualizar cookie ===
+  function registrarError(mensaje) {
+    alert(mensaje); // Muestra aviso al usuario
+    contadorErrores++; // Suma 1 al contador de errores
+    crearCookie("contadorErrores", contadorErrores); // Guarda cookie actualizada
+    mostrarFacturas(); // Refresca contador en el área de mensajes
+  }
+
+  //---------------------------------------------------------------------------------------------------------------------//
+
+  // === Añadir y/o Actualizar Facturas ===
+  function añadirFactura(event) {
+    event.preventDefault(); // Evita recargar el formulario al hacer clic
+
+    // === Valores obtenidos del formulario ===
+    const asunto = document.getElementById("asunto").value.trim();
+    const fecha = document.getElementById("fecha").value;
+    const cantidad = parseFloat(document.getElementById("cantidad").value);
+    const tipo = document.getElementById("tipo").value;
+
+    // --- Validaciones ---
+
+    // Comprueba que el asunto empiece por mayúscula y tenga máximo 10 caracteres.
+    const regex = /^[A-Z][A-Za-z0-9 ]{0,9}$/;
+    if (!regex.test(asunto)) {
+      registrarError("El asunto debe comenzar con mayúscula y tener máximo 10 caracteres.");
+      return;
+    }
+
+    // Valida que la fecha no sea anterior al 01/01/2000.
+    if (!fecha || new Date(fecha) < new Date("2000-01-01")) {
+      registrarError("La fecha no puede ser anterior al 01-01-2000.");
+      return;
+    }
+
+    // Comprueba que la cantidad sea un número válido mayor o igual que 0.
+    if (isNaN(cantidad) || cantidad < 0) {
+      registrarError("La cantidad debe ser un número mayor o igual que 0.");
+      return;
+    }
+
+    // --- Si estamos editando una factura existente ---
+    if (indiceEditar >= 0) {
+      facturas[indiceEditar] = { asunto, fecha, cantidad, tipo };
+      indiceEditar = -1; // Reiniciamos el índice de edición
+      alert("Factura actualizada correctamente.");
+
+    } else {
+      // --- Si estamos añadiendo una nueva factura !---
+      //Verifica que no haya otra factura con el mismo asunto
+      //Usamo some()se usa para comprobar si al menos un elemento de un array cumple una condición
+      const duplicado = facturas.some(f => f.asunto === asunto);
+      if (duplicado) {
+        registrarError("Ya existe una factura con el mismo asunto.");
+        return;
+      }
+
+      // Si todo es correcto, añadimos la nueva factura al array
+      const nuevaFactura = { asunto, fecha, cantidad, tipo };
+      facturas.push(nuevaFactura);
+      alert("Factura añadida correctamente.");
+    }
+
+    // Guardamos la preferencia de tipo en cookie (persistente)
+    crearCookie("tipoPreferido", tipo);
+
+    // Actualizamos la lista de facturas
+    mostrarFacturas();
+
+    // Limpiamos el formulario
+    document.querySelector("form").reset();
+  } // end añadirFactura
+
+  //---------------------------------------------------------------------------------------------------------------------//
+
+  // === Mostrar Facturas ===
+  // Esta función recorre el array de facturas y las muestra en el área de texto.
+  // También se encarga de actualizar el contador de facturas y de errores.
+  
+  function mostrarFacturas() {
+    const lista = document.getElementById("lista");
+    lista.value = ""; // Limpiamos la lista antes de volver a llenarla
+
+    facturas.forEach((f, index) => {
+      // Se recorre el array de facturas donde el index + 1 
+      // sirve para numerarlas desde la posición 1 en lugar de la 0.
+      lista.value += `${index + 1}. ${f.asunto}:${f.fecha}:${f.cantidad.toFixed(2)}€:${f.tipo}\n`;
+    });
+
+    // Muestra el número de facturas y el contador de errores persistente.
+    document.querySelector(".mensaje").textContent =
+      `${facturas.length} factura(s) | Errores: ${contadorErrores}`;
+  } // end mostrarFacturas
+
+  //---------------------------------------------------------------------------------------------------------------------//
+
+  // === Editar Factura ===
+
+  // Permite cargar los datos de una factura seleccionada en el formulario.
+  function editarFactura() {
+    const lista = document.getElementById("lista");
+    const lineas = lista.value.trim().split("\n");
+    const seleccion = lista.selectionStart; // posición del cursor en el textarea
+    const lineaSeleccionada = lista.value.substr(0, seleccion).split("\n").length - 1;
+
+    // Validación: comprobar que haya una línea válida seleccionada
+    if (lineas.length === 0 || lineaSeleccionada < 0 || lineaSeleccionada >= facturas.length) {
+      registrarError("Selecciona una factura válida para editar.");
+      return;
+    }
+
+    // Cargamos los datos de la factura seleccionada
+    const factura = facturas[lineaSeleccionada];
+    document.getElementById("asunto").value = factura.asunto;
+    document.getElementById("fecha").value = factura.fecha;
+    document.getElementById("cantidad").value = factura.cantidad;
+    document.getElementById("tipo").value = factura.tipo;
+
+    // Guardamos el índice de la factura que se está editando
+    indiceEditar = lineaSeleccionada;
+    alert(`Factura "${factura.asunto}" cargada para edición.`);
+  } // end editarFactura
+
+  //---------------------------------------------------------------------------------------------------------------------//
+
+  // === Eliminar Factura ===
+  // Permite borrar la factura actualmente seleccionada en la lista.
+  function eliminarFactura() {
+    const lista = document.getElementById("lista");
+    const seleccion = lista.selectionStart; // posición del cursor en el textarea
+    const lineaSeleccionada = lista.value.substr(0, seleccion).split("\n").length - 1;
+
+    // Si no hay facturas, mostramos error
+    if (facturas.length === 0) {
+      registrarError("No hay facturas para eliminar.");
+      return;
+    }
+
+    // Validar que la selección sea válida
+    if (lineaSeleccionada < 0 || lineaSeleccionada >= facturas.length) {
+      registrarError("Selecciona una factura válida para eliminar.");
+      return;
+    }
+
+    // Confirmamos antes de eliminar
+    const confirmacion = confirm(`¿Estás seguro que deseas eliminar la factura "${facturas[lineaSeleccionada].asunto}"?`);
+    if (confirmacion) {
+      facturas.splice(lineaSeleccionada, 1); // Elimina la factura seleccionada 
+      mostrarFacturas(); // Actualiza la lista
+      alert("Factura eliminada correctamente.");
+    }
+  } // end eliminarFactura
+
+  </script>
+</body>
+</html>

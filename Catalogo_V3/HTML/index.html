@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Productos</title>
+    <link rel="stylesheet" href="/CSS/style.css">
+</head>
+<body style="text-align: center;">
+
+<h2>Catálogo de Productos</h2>
+
+<form id="formProducto">
+   <label for="id_producto">ID Producto:</label>
+   <input type="text" id="id_producto" name="id_producto">
+   <span class="error" id="error_id"></span>
+   <br><br>
+
+   <label for="nombre_producto">Nombre Producto:</label>
+   <input type="text" id="nombre_producto" name="nombre_producto">
+   <span class="error" id="error_nombre"></span>
+   <br><br>
+
+   <label for="descripcion">Descripción del producto</label> <br>
+   <textarea name="descripcion" id="descripcion"></textarea>
+   <span class="error" id="error_descripcion"></span>
+   <br><br>
+
+   <label for="precio">Precio:</label>
+   <input type="number" name="precio" id="precio">
+   <span class="error" id="error_precio"></span>
+   <br><br>
+
+   <label for="imagen">Sube tu imagen:</label>
+   <input type="file" id="imagen" name="imagen" accept="image/*">
+   <span class="error" id="error_imagen"></span>
+   <br><br>
+
+   <button type="submit">Añadir Producto</button>
+   <br><br>
+   <h3>Total de productos: <span id="contador">0</span></h3>
+</form> 
+
+<h3>Catálogo</h3>
+<div id="catalogo" class="catalogo-grid"></div>
+
+<script type="module" src="/JS/validacion_producto.js"></script>
+
+</body>
+</html>

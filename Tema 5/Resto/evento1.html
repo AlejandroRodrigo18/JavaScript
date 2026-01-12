@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <button class="button">Botón</button>
+    <p class="parrafo"></p>
+    <script>
+
+    const button = document.querySelector("button");
+    let contador = 0;
+
+        button.addEventListener("click", () =>{
+
+        const  p = document.querySelector(".parrafo");
+        p.textContent = ("Hola. Has pulsado el botón " + contador);
+
+        contador = contador + 1;
+        
+        
+    })
+    </script>
+</body>
+</html>
