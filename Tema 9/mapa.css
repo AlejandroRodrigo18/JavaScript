@@ -1,0 +1,31 @@
+#map { 
+    width: 100%; 
+    height: 580px; 
+    margin-top: 20px;
+    box-shadow: 3px 3px 6px #888;
+}
+
+#coorde {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.coorde-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.coorde-box label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.coorde-box input {
+    width: 120px;
+    padding: 5px;
+    text-align: center;
+    font-weight: bold;
+}
